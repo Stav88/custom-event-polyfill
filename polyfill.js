@@ -18,6 +18,20 @@
       throw new Error('Could not prevent default');
     }
   } catch (e) {
+    function copyProtoypeToObject(obj, proto) {
+      if (proto === window.CustomEvent.prototype) {
+        return;
+      }
+
+      // eslint-disable-next-line no-restricted-syntax
+      Object.getOwnPropertyNames(proto).forEach((key) => {
+        const descriptor = Object.getOwnPropertyDescriptor(proto, key);
+        if (descriptor && !Object.prototype.hasOwnProperty.call(obj, key)) {
+          Object.defineProperty(obj, key, descriptor);
+        }
+      });
+    }
+
     var CustomEvent = function(event, params) {
       var evt, origPrevent;
       params = params || {};
@@ -44,6 +58,12 @@
           this.defaultPrevented = true;
         }
       };
+      
+      if (Object.setPrototypeOf) { // IE 11, Edge and Webkit
+        Object.setPrototypeOf(evt, Object.getPrototypeOf(this));
+      } else { // IE 10
+        copyProtoypeToObject(evt, Object.getPrototypeOf(this));
+      }
       return evt;
     };
 
